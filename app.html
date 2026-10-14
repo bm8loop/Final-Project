@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RMHS Students</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --navy: #1c2a4a; --accent: #c8102e; --ink: #1f2430; --muted: #6b7280;
+    --line: #e3e6ec; --bg: #f5f6f9; --card: #ffffff; --good: #1f8a4c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  header { background: var(--navy); color: #fff; display: flex; align-items: center; gap: 28px; padding: 0 20px; }
+  header h1 { font-size: 17px; margin: 0; padding: 14px 0; font-weight: 600; white-space: nowrap; }
+  nav { display: flex; gap: 4px; align-self: stretch; }
+  nav a { color: #c9d1e3; text-decoration: none; padding: 0 14px; display: flex; align-items: center;
+          border-bottom: 3px solid transparent; }
+  nav a:hover { color: #fff; }
+  nav a.active { color: #fff; border-bottom-color: var(--accent); }
+
+  main { flex: 1; min-height: 0; overflow: auto; }
+  .page { display: none; padding: 20px; max-width: 980px; margin: 0 auto; }
+  .page.active { display: block; }
+  #page-map.active { display: flex; flex-direction: column; max-width: none; height: 100%; padding: 0;
+                     position: relative; }
+
+  .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; }
+  h2 { font-size: 18px; margin: 0; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+
+  #page-students.active, #page-interests.active { display: grid; grid-template-columns: 320px 1fr; gap: 20px;
+                          height: 100%; max-width: 1100px; align-items: start; }
+  .side-list { display: flex; flex-direction: column; max-height: 100%; }
+  .side-list .bar, .panel-bar { padding: 14px 14px 12px; margin: 0; border-bottom: 1px solid var(--line); min-height: 61px; }
+  .rows { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+  .rows li { display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+             border-bottom: 1px solid var(--line); border-left: 3px solid transparent; }
+  .rows li:last-child { border-bottom: 0; }
+  .side-list .rows li { cursor: pointer; }
+  .side-list .rows li:hover { background: #f0f3fa; }
+  .rows li.selected { background: #e8edf8; border-left-color: var(--accent); }
+  .count { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rows li .grow { flex: 1; min-width: 0; }
+  .rows li input { flex: 1; min-width: 0; padding: 6px 8px; }
+  button.small { padding: 4px 10px; font-size: 13px; }
+  .add-row { display: flex; gap: 10px; padding: 14px; border-top: 1px solid var(--line); }
+  .add-row input { flex: 1; }
+  #interest-error { padding: 0 14px 14px; }
+  .who { flex: 1; min-width: 0; }
+  .who b, .who small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who b { font-weight: 600; }
+  .who small { color: var(--muted); font-size: 13px; }
+  .who small.none { font-style: italic; }
+  .miles { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--navy); font-weight: 600; }
+  .miles small { font-weight: 400; color: var(--muted); }
+  .detail-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .detail-head .avatar { width: 52px; height: 52px; margin: 0; font-size: 19px; flex: none; }
+  #detail-summary { margin: 2px 0 0; }
+  .empty { padding: 40px 20px; text-align: center; }
+  .saved { color: var(--good); }
+  .interests-box { grid-column: 1 / -1; margin: 0; padding: 12px 14px 14px; border: 1px solid var(--line);
+                   border-radius: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                   gap: 12px 16px; }
+  .interests-box legend { font-size: 13px; color: var(--muted); padding: 0 6px; }
+  .interest-group h3 { font-size: 13px; margin: 0 0 6px; color: var(--navy); }
+  .interest-group label { flex-direction: row; align-items: center; gap: 7px; color: var(--ink);
+                          font-size: 14px; padding: 2px 0; cursor: pointer; }
+  .interest-group input { margin: 0; }
+
+  button { font: inherit; border: 1px solid var(--line); background: #fff; color: var(--ink);
+           padding: 8px 14px; border-radius: 6px; cursor: pointer; }
+  button:hover { background: #f0f3fa; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover { background: #2a3d68; }
+  button:disabled { opacity: .6; cursor: default; }
+
+  form { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
+  label.wide, .actions, .error { grid-column: 1 / -1; }
+  input, select { font: inherit; color: var(--ink); padding: 8px 10px; border: 1px solid #cfd4de;
+                  border-radius: 6px; background: #fff; }
+  input:focus, select:focus { outline: 2px solid #9db4e8; border-color: transparent; }
+  .actions { display: flex; gap: 10px; align-items: center; }
+  .error { color: var(--accent); margin: 0; }
+  .error:empty { display: none; }
+
+  /* Floating hint and student card over the map (Leaflet's own controls sit at z-index 1000). */
+  #map-hint { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 1100;
+              background: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; max-width: calc(100% - 32px);
+              box-shadow: 0 2px 8px rgba(0,0,0,.18); text-align: center; }
+  #map-card { position: absolute; top: 16px; left: 16px; bottom: 16px; width: 320px; z-index: 1100;
+              background: #fff; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,.22);
+              overflow-y: auto; padding: 28px 22px 22px; }
+  #map-card[hidden] { display: none; }
+  .card-close { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; padding: 0;
+                border-radius: 50%; border: 0; background: #f0f2f6; font-size: 20px; line-height: 1; color: var(--muted); }
+  .card-close:hover { background: #e2e6ee; color: var(--ink); }
+  .avatar { width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; background: var(--navy); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 600; }
+  .avatar.female { background: #d63384; }
+  .avatar[hidden] { display: none; }
+  #card-name { font-size: 24px; font-weight: 700; text-align: center; line-height: 1.2; margin: 0; }
+  #card-email { display: block; text-align: center; color: var(--muted); font-size: 14px; margin-top: 4px;
+                text-decoration: none; overflow-wrap: anywhere; }
+  a#card-email:hover { color: var(--navy); text-decoration: underline; }
+  .card-address { display: flex; gap: 10px; align-items: flex-start; margin-top: 22px; padding: 14px 0;
+                  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 14px; }
+  .card-stats { display: grid; grid-template-columns: repeat(3, 1fr); padding: 14px 0;
+                border-bottom: 1px solid var(--line); text-align: center; }
+  .card-stats div + div { border-left: 1px solid var(--line); }
+  .card-stats small { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .card-stats b { display: block; margin-top: 2px; font-size: 16px; color: var(--ink); font-weight: 600; }
+  .card-interests h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+                       font-weight: 600; margin: 16px 0 10px; }
+  #map { flex: 1; min-height: 300px; }
+  .school-icon { font-size: 34px; line-height: 44px; text-align: center; background: #fff;
+                 border: 3px solid var(--accent); border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+  .distance-label { background: var(--navy); color: #fff; border: 0; font-weight: 600; box-shadow: none; }
+  .distance-label::before { display: none; }
+
+  .pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 18px; }
+  #friend-result { margin-top: 16px; padding: 20px; }
+  .score { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .score b { font-size: 40px; line-height: 1; }
+  .score span { font-size: 18px; font-weight: 600; }
+  .factor { display: grid; grid-template-columns: 150px 1fr 70px; gap: 12px; align-items: center; margin-top: 14px; }
+  .factor small { grid-column: 2 / -1; color: var(--muted); margin-top: -8px; }
+  .track { height: 10px; background: #e8ebf1; border-radius: 5px; overflow: hidden; }
+  .track i { display: block; height: 100%; background: var(--navy); }
+  .factor .pts { text-align: right; font-variant-numeric: tabular-nums; }
+  .note { margin: 18px 0 0; font-size: 13px; color: var(--muted); }
+  .compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 22px;
+             padding-top: 18px; border-top: 1px solid var(--line); }
+  .compare h3 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+  .compare .both h3 { color: var(--good); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 13px; padding: 3px 9px; border-radius: 12px; background: #eef1f6; }
+  .both .chip { background: #dcf1e4; color: #145c33; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏫 Rocky Mountain High School</h1>
+  <nav>
+    <a href="#students" data-page="students">Students</a>
+    <a href="#map" data-page="map">Map</a>
+    <a href="#friends" data-page="friends">Friends</a>
+    <a href="#interests" data-page="interests">Interests</a>
+  </nav>
+</header>
+
+<main>
+  <section class="page" id="page-students">
+    <div class="card side-list" id="student-list">
+      <div class="bar">
+        <h2>Students <span class="muted" id="student-count"></span></h2>
+        <button class="primary" id="add-student">Add student</button>
+      </div>
+      <ul class="rows" id="student-rows"></ul>
+    </div>
+
+    <div class="card empty muted" id="student-empty">Select a student on the left to see and edit their details.</div>
+
+    <div id="student-detail" hidden>
+      <div class="detail-head">
+        <div class="avatar" id="detail-avatar"></div>
+        <div>
+          <h2 id="form-title"></h2>
+          <p class="muted" id="detail-summary"></p>
+        </div>
+      </div>
+      <form class="card" id="student-form">
+        <label>First name <input name="first_name" required></label>
+        <label>Last name <input name="last_name" required></label>
+        <label class="wide">Email <input name="email" type="email" required placeholder="student@example.com"></label>
+        <label>Gender <select name="gender" required></select></label>
+        <label>Grade <select name="grade" required></select></label>
+        <label class="wide">Full address
+          <input name="address" required placeholder="1300 W Swallow Rd, Fort Collins, CO 80526">
+        </label>
+        <fieldset class="interests-box" id="interest-boxes">
+          <legend>Interests</legend>
+        </fieldset>
+        <p class="error" id="form-error"></p>
+        <div class="actions">
+          <button class="primary" type="submit" id="form-save">Save</button>
+          <button type="button" id="form-cancel">Cancel</button>
+          <span class="muted" id="form-status">Distance from school is recalculated from the address when you save.</span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="page" id="page-map">
+    <div id="map"></div>
+    <div id="map-hint"></div>
+    <aside id="map-card" hidden>
+      <button class="card-close" id="map-card-close" type="button" aria-label="Close">&times;</button>
+      <div class="avatar" id="card-avatar"></div>
+      <h2 id="card-name"></h2>
+      <a id="card-email"></a>
+      <div class="card-address"><span aria-hidden="true">📍</span><span id="card-address"></span></div>
+      <div class="card-stats">
+        <div><small>Grade</small><b id="card-grade"></b></div>
+        <div><small>Gender</small><b id="card-gender"></b></div>
+        <div><small>From school</small><b id="card-distance"></b></div>
+      </div>
+      <div class="card-interests">
+        <h3>Interests</h3>
+        <div class="chips" id="card-interests"></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="page" id="page-friends">
+    <div class="bar"><h2>Friends</h2></div>
+    <div class="card pickers">
+      <label>First student <select id="friend-a"></select></label>
+      <label>Second student <select id="friend-b"></select></label>
+    </div>
+    <div class="card" id="friend-result"></div>
+  </section>
+
+  <section class="page" id="page-interests">
+    <div class="card side-list">
+      <div class="bar"><h2>Categories</h2></div>
+      <ul class="rows" id="category-rows"></ul>
+    </div>
+
+    <div class="card empty muted" id="category-empty">Select a category on the left to see its interests.</div>
+
+    <div class="card" id="category-detail" hidden>
+      <div class="bar panel-bar">
+        <h2 id="category-title"></h2>
+      </div>
+      <ul class="rows" id="interest-rows"></ul>
+      <form class="add-row" id="interest-add">
+        <input name="interest_name" placeholder="New interest" autocomplete="off">
+        <button class="primary" type="submit">Add interest</button>
+      </form>
+      <p class="error" id="interest-error"></p>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const el = (tag, text, className) => {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+};
+const fullName = s => `${s.first_name} ${s.last_name}`;
+
+let data = { school: null, students: [], genders: [], grades: [] };
+let editingId = null;
+let savedNotice = '';  // shown once on the next render of the student form
+let interests = [];
+let editingInterestId = null;
+
+// ---------- routing: #students, #students/2, #students/new, #map/3, #friends/1/4, #interests/Music ----------
+
+function route() {
+  const [page = 'students', ...args] = location.hash.replace('#', '').split('/');
+  const name = ['students', 'map', 'friends', 'interests'].includes(page) ? page : 'students';
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
+  document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.page === name));
+  if (name === 'students') showStudents(args[0]);
+  savedNotice = '';
+  if (name === 'map') showMap(args[0]);
+  if (name === 'friends') showFriends(args[0], args[1]);
+  if (name === 'interests') showInterests(args[0] === undefined ? undefined : decodeURIComponent(args[0]));
+}
+
+function applyData(fresh) {
+  data = fresh;
+  route();
+}
+
+// ---------- Students ----------
+
+function fillSelect(select, options, placeholder) {
+  select.replaceChildren(new Option(placeholder, ''), ...options.map(o => new Option(o.label ?? o, o.value ?? o)));
+}
+
+function studentListItem(s, selected) {
+  const item = el('li', undefined, selected ? 'selected' : '');
+  const who = el('div', undefined, 'who');
+  who.append(el('b', fullName(s)), s.email ? el('small', s.email) : el('small', 'No email', 'none'));
+  const miles = el('span', s.distance_from_school_miles, 'miles');
+  miles.append(el('small', ' mi'));
+  item.append(who, miles);
+  item.onclick = () => { location.hash = `#students/${s.id}`; };
+  return item;
+}
+
+function showStudents(arg) {
+  const savedMessage = savedNotice;
+  const student = data.students.find(s => String(s.id) === arg);
+  const adding = arg === 'new';
+
+  $('student-count').textContent = `(${data.students.length})`;
+  $('student-rows').replaceChildren(...data.students.map(s => studentListItem(s, s === student)));
+
+  $('student-empty').hidden = adding || !!student;
+  $('student-detail').hidden = !(adding || student);
+  if (!adding && !student) return;
+
+  editingId = student ? student.id : null;
+  const form = $('student-form');
+  fillSelect(form.gender, data.genders, 'Choose…');
+  fillSelect(form.grade, data.grades, 'Choose…');
+  $('detail-avatar').hidden = !student;
+  if (student) setAvatar($('detail-avatar'), student);
+  $('form-title').textContent = student ? `#${student.id} ${fullName(student)}` : 'Add student';
+  $('detail-summary').textContent = student
+    ? `${student.distance_from_school_miles} miles from ${data.school.name}`
+    : 'Fill in the details and click Save.';
+  $('form-error').textContent = '';
+  $('form-status').textContent = savedMessage || 'Distance from school is recalculated from the address when you save.';
+  $('form-status').className = savedMessage ? 'saved' : 'muted';
+  for (const field of ['first_name', 'last_name', 'email', 'gender', 'grade', 'address']) {
+    form[field].value = student ? student[field] : '';
+  }
+  renderInterestBoxes(student ? student.interest_ids : []);
+  if (!savedMessage) form.first_name.focus();
+}
+
+// One column per category, with a checkbox for each interest in it.
+function renderInterestBoxes(checkedIds) {
+  const groups = categoryNames().map(category => {
+    const group = el('div', undefined, 'interest-group');
+    group.append(el('h3', category));
+    for (const interest of interests.filter(i => i.category === category)) {
+      const box = el('input');
+      box.type = 'checkbox';
+      box.name = 'interest';
+      box.value = interest.interest_id;
+      box.checked = checkedIds.includes(interest.interest_id);
+      const label = el('label');
+      label.append(box, interest.name);
+      group.append(label);
+    }
+    return group;
+  });
+  $('interest-boxes').replaceChildren(el('legend', 'Interests'), ...groups);
+}
+
+$('add-student').onclick = () => { location.hash = '#students/new'; };
+// Cancel throws away unsaved changes: re-show the saved record, or close the add form.
+$('form-cancel').onclick = () => {
+  if (editingId === null) location.hash = '#students';
+  else showStudents(String(editingId));
+};
+
+$('student-form').onsubmit = async event => {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+  const body = Object.fromEntries(formData);
+  delete body.interest;
+  body.interest_ids = formData.getAll('interest').map(Number);
+  $('form-error').textContent = '';
+  $('form-save').disabled = true;
+  $('form-save').textContent = 'Looking up address…';
+  try {
+    const response = await fetch(editingId === null ? '/api/students' : `/api/students/${editingId}`, {
+      method: editingId === null ? 'POST' : 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    data = result;
+    // A new student gets the highest id; stay on the saved student either way.
+    const id = editingId ?? Math.max(...data.students.map(s => s.id));
+    savedNotice = 'Saved.';
+    if (location.hash === `#students/${id}`) route();
+    else location.hash = `#students/${id}`;
+  } catch (error) {
+    $('form-error').textContent = error.message || 'Could not save the student.';
+  } finally {
+    $('form-save').disabled = false;
+    $('form-save').textContent = 'Save';
+  }
+};
+
+// ---------- Map ----------
+
+const METERS_PER_MILE = 1609.344;
+let map, dotLayer, selectionLayer;
+
+function showMap(selectedArg) {
+  const school = [data.school.lat, data.school.lon];
+  if (!map) {
+    map = L.map('map', { zoomControl: false }).setView(school, 12);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+    L.marker(school, {
+      icon: L.divIcon({ className: 'school-icon', html: '🏫', iconSize: [50, 50], iconAnchor: [25, 25] }),
+      zIndexOffset: 1000,
+    }).addTo(map).bindTooltip(data.school.name);
+    selectionLayer = L.layerGroup().addTo(map);
+    dotLayer = L.layerGroup().addTo(map);
+    map.on('click', () => { location.hash = '#map'; });
+  }
+  map.invalidateSize();
+
+  const located = data.students.filter(s => s.lat !== null);
+  const selected = located.find(s => String(s.id) === selectedArg);
+
+  dotLayer.clearLayers();
+  for (const s of located) {
+    const isSelected = s === selected;
+    L.circleMarker([s.lat, s.lon], {
+      radius: isSelected ? 10 : 8, weight: 2, color: '#fff',
+      fillColor: isSelected ? '#c8102e' : '#1c2a4a', fillOpacity: 1, bubblingMouseEvents: false,
+    }).addTo(dotLayer)
+      .bindTooltip(fullName(s))
+      .on('click', () => { location.hash = `#map/${s.id}`; });
+  }
+
+  selectionLayer.clearLayers();
+  const missing = data.students.length - located.length;
+  const missingNote = missing ? ` ${missing} student(s) are not shown because their address could not be found.` : '';
+  $('map-card').hidden = !selected;
+  $('map-hint').hidden = !!selected;
+  if (!selected) {
+    $('map-hint').textContent = "Click a student's dot to see their details." + missingNote;
+    if (located.length) map.fitBounds(L.latLngBounds([school, ...located.map(s => [s.lat, s.lon])]).pad(0.15));
+    return;
+  }
+
+  const home = [selected.lat, selected.lon];
+  const meters = L.latLng(school).distanceTo(home);
+  const miles = (meters / METERS_PER_MILE).toFixed(1);
+  const circle = L.circle(school, { radius: meters, color: '#c8102e', weight: 2, fillOpacity: 0.06 }).addTo(selectionLayer);
+  L.polyline([school, home], { color: '#c8102e', weight: 3, dashArray: '6 6' }).addTo(selectionLayer)
+    .bindTooltip(`${miles} mi`, { permanent: true, direction: 'center', className: 'distance-label' });
+  // Keep the circle clear of the card on the left.
+  map.fitBounds(circle.getBounds(), { paddingTopLeft: [360, 30], paddingBottomRight: [30, 30] });
+  showStudentCard(selected, miles);
+}
+
+// Initials in a circle: pink for female students, navy for everyone else.
+function setAvatar(node, student) {
+  node.textContent = (student.first_name[0] || '') + (student.last_name[0] || '');
+  node.className = student.gender === 'Female' ? 'avatar female' : 'avatar';
+}
+
+function showStudentCard(student, miles) {
+  setAvatar($('card-avatar'), student);
+  $('card-name').textContent = fullName(student);
+  const email = $('card-email');
+  if (student.email) {
+    email.textContent = student.email;
+    email.href = `mailto:${student.email}`;
+  } else {
+    email.textContent = 'No email';
+    email.removeAttribute('href');
+  }
+  $('card-address').textContent = student.address;
+  $('card-grade').textContent = student.grade;
+  $('card-gender').textContent = student.gender;
+  $('card-distance').textContent = `${miles} mi`;
+  const names = student.interest_ids.map(interestById).filter(Boolean).map(i => el('span', i.name, 'chip'));
+  $('card-interests').replaceChildren(...(names.length ? names : [el('span', 'No interests saved', 'muted')]));
+}
+
+$('map-card-close').onclick = () => { location.hash = '#map'; };
+
+// ---------- Friends ----------
+
+const WEIGHTS = { interests: 35, grade: 30, distance: 20, gender: 15 };
+const MAX_FRIEND_MILES = 6;
+const FULL_MARKS_SHARED = 3;  // this many shared interests earns all of the "shared" credit
+
+function milesBetween(a, b) {
+  const rad = d => d * Math.PI / 180;
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2
+          + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
+  return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+}
+
+function interestById(id) {
+  return interests.find(i => i.interest_id === id);
+}
+
+// Which saved interests the two students share, and which only one of them has.
+function compareInterests(a, b) {
+  const idsA = new Set(a.interest_ids), idsB = new Set(b.interest_ids);
+  const pick = ids => ids.map(interestById).filter(Boolean);
+  return {
+    both: pick([...idsA].filter(id => idsB.has(id))),
+    onlyA: pick([...idsA].filter(id => !idsB.has(id))),
+    onlyB: pick([...idsB].filter(id => !idsA.has(id))),
+  };
+}
+
+// 70% of the interest score comes from shared interests (full marks at FULL_MARKS_SHARED),
+// 30% from liking the same kinds of things: the share of their categories they have in common.
+function interestFactor(a, b) {
+  if (!a.interest_ids.length || !b.interest_ids.length) {
+    return { value: 0.5, detail: 'Interests not filled in for one student, so a middle value is used' };
+  }
+  const { both } = compareInterests(a, b);
+  const categories = s => new Set(s.interest_ids.map(interestById).filter(Boolean).map(i => i.category));
+  const catA = categories(a), catB = categories(b);
+  const sharedCategories = [...catA].filter(c => catB.has(c));
+  const allCategories = new Set([...catA, ...catB]);
+  const value = 0.7 * Math.min(1, both.length / FULL_MARKS_SHARED)
+              + 0.3 * (allCategories.size ? sharedCategories.length / allCategories.size : 0);
+  const shared = both.length ? `${both.length} shared interest${both.length > 1 ? 's' : ''}` : 'No shared interests';
+  const cats = sharedCategories.length ? `both like ${sharedCategories.join(', ')}` : 'no categories in common';
+  return { value, detail: `${shared}; ${cats}` };
+}
+
+function friendship(a, b) {
+  const gradeGap = Math.abs(a.grade - b.grade);
+  const grade = { value: [1, 0.6, 0.3, 0.1][gradeGap] ?? 0,
+                  detail: gradeGap === 0 ? `Both in grade ${a.grade}` : `Grades ${a.grade} and ${b.grade} (${gradeGap} apart)` };
+
+  let distance;
+  if (a.lat === null || b.lat === null) {
+    distance = { value: 0.5, detail: 'Distance unknown (an address could not be found), so a middle value is used' };
+  } else {
+    const miles = milesBetween(a, b);
+    distance = { value: Math.max(0, 1 - miles / MAX_FRIEND_MILES), detail: `Homes are ${miles.toFixed(1)} miles apart` };
+  }
+
+  const unknownGender = [a.gender, b.gender].includes('Prefer not to say');
+  const gender = unknownGender ? { value: 0.75, detail: 'Gender not given for one student, so a middle value is used' }
+               : a.gender === b.gender ? { value: 1, detail: `Both ${a.gender.toLowerCase()}` }
+               : { value: 0.5, detail: `${a.gender} and ${b.gender}` };
+
+  const factors = [
+    { name: 'Interests', weight: WEIGHTS.interests, ...interestFactor(a, b) },
+    { name: 'Grade', weight: WEIGHTS.grade, ...grade },
+    { name: 'Distance apart', weight: WEIGHTS.distance, ...distance },
+    { name: 'Gender', weight: WEIGHTS.gender, ...gender },
+  ];
+  const score = Math.round(factors.reduce((sum, f) => sum + f.value * f.weight, 0));
+  const label = score >= 75 ? 'Very likely friends' : score >= 55 ? 'Likely friends'
+              : score >= 35 ? 'Possible friends' : 'Unlikely friends';
+  return { score, label, factors };
+}
+
+function showFriends(argA, argB) {
+  const options = data.students.map(s => ({ label: `${fullName(s)} (grade ${s.grade})`, value: s.id }));
+  fillSelect($('friend-a'), options, 'Choose a student…');
+  fillSelect($('friend-b'), options, 'Choose a student…');
+  const a = data.students.find(s => String(s.id) === argA);
+  const b = data.students.find(s => String(s.id) === argB);
+  $('friend-a').value = a ? a.id : '';
+  $('friend-b').value = b ? b.id : '';
+
+  const result = $('friend-result');
+  if (!a || !b) {
+    result.replaceChildren(el('span', 'Choose two students to see how likely they are to be friends.', 'muted'));
+    return;
+  }
+  if (a === b) {
+    result.replaceChildren(el('span', 'Choose two different students.', 'muted'));
+    return;
+  }
+
+  const { score, label, factors } = friendship(a, b);
+  const heading = el('div', undefined, 'score');
+  heading.append(el('b', `${score}%`), el('span', label));
+  result.replaceChildren(heading, el('div', `${fullName(a)} and ${fullName(b)}`, 'muted'));
+  for (const f of factors) {
+    const row = el('div', undefined, 'factor');
+    const track = el('div', undefined, 'track');
+    const fill = el('i');
+    fill.style.width = `${f.value * 100}%`;
+    track.append(fill);
+    row.append(el('span', f.name), track, el('span', `${Math.round(f.value * f.weight)} / ${f.weight}`, 'pts'),
+               el('small', f.detail));
+    result.append(row);
+  }
+  result.append(interestComparison(a, b));
+  result.append(el('p', `This is a simple estimate, not a prediction. Shared interests count most (${WEIGHTS.interests} points: `
+    + `full marks for ${FULL_MARKS_SHARED} interests in common, plus some credit for liking the same categories), `
+    + `then same grade (${WEIGHTS.grade} points), living close together (${WEIGHTS.distance} points, falling to zero at `
+    + `${MAX_FRIEND_MILES} miles apart) and same gender (${WEIGHTS.gender} points).`, 'note'));
+}
+
+function interestComparison(a, b) {
+  const { both, onlyA, onlyB } = compareInterests(a, b);
+  const column = (title, items, className, emptyText) => {
+    const col = el('div', undefined, className);
+    const chips = el('div', undefined, 'chips');
+    chips.append(...(items.length ? items.map(i => el('span', i.name, 'chip')) : [el('span', emptyText, 'muted')]));
+    col.append(el('h3', title), chips);
+    return col;
+  };
+  const none = s => (s.interest_ids.length ? 'Nothing else' : 'No interests saved');
+  const box = el('div', undefined, 'compare');
+  box.append(column(`Only ${a.first_name}`, onlyA, '', none(a)),
+             column('Both', both, 'both', 'None in common'),
+             column(`Only ${b.first_name}`, onlyB, '', none(b)));
+  return box;
+}
+
+for (const id of ['friend-a', 'friend-b']) {
+  $(id).onchange = () => { location.hash = `#friends/${$('friend-a').value || '-'}/${$('friend-b').value || '-'}`; };
+}
+
+// ---------- Interests ----------
+
+function categoryNames() {
+  return [...new Set(interests.map(i => i.category))];
+}
+
+function showInterests(category) {
+  const categories = categoryNames();
+  $('category-rows').replaceChildren(...categories.map(name => {
+    const item = el('li', undefined, name === category ? 'selected' : '');
+    item.append(el('b', name, 'grow'), el('span', interests.filter(i => i.category === name).length, 'count'));
+    item.onclick = () => { location.hash = `#interests/${encodeURIComponent(name)}`; };
+    return item;
+  }));
+
+  const known = categories.includes(category);
+  $('category-empty').hidden = known;
+  $('category-detail').hidden = !known;
+  if (!known) return;
+
+  const items = interests.filter(i => i.category === category);
+  $('category-title').textContent = `${category} (${items.length})`;
+  $('interest-rows').replaceChildren(...items.map(interestItem));
+  $('interest-add').dataset.category = category;
+}
+
+function interestItem(interest) {
+  const item = el('li');
+  if (interest.interest_id !== editingInterestId) {
+    const edit = el('button', 'Edit', 'small');
+    edit.type = 'button';
+    edit.onclick = () => { editingInterestId = interest.interest_id; $('interest-error').textContent = ''; route(); };
+    item.append(el('span', interest.name, 'grow'), edit);
+    return item;
+  }
+
+  const form = el('form');
+  form.style.cssText = 'display: contents';
+  const input = el('input');
+  input.value = interest.name;
+  const save = el('button', 'Save', 'small primary');
+  const cancel = el('button', 'Cancel', 'small');
+  cancel.type = 'button';
+  cancel.onclick = () => { editingInterestId = null; $('interest-error').textContent = ''; route(); };
+  form.onsubmit = event => {
+    event.preventDefault();
+    saveInterest(`/api/interests/${interest.interest_id}`, 'PUT', { name: input.value });
+  };
+  form.append(input, save, cancel);
+  item.append(form);
+  setTimeout(() => input.focus());
+  return item;
+}
+
+async function saveInterest(url, method, body) {
+  $('interest-error').textContent = '';
+  try {
+    const response = await fetch(url, {
+      method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    interests = result.interests;
+    editingInterestId = null;
+    $('interest-add').interest_name.value = '';
+    route();
+  } catch (error) {
+    $('interest-error').textContent = error.message || 'Could not save the interest.';
+  }
+}
+
+$('interest-add').onsubmit = event => {
+  event.preventDefault();
+  const form = event.target;
+  saveInterest('/api/interests', 'POST', { name: form.interest_name.value, category: form.dataset.category });
+};
+
+// ---------- start ----------
+
+window.addEventListener('hashchange', route);
+Promise.all(['/api/students', '/api/interests'].map(url => fetch(url).then(r => r.json()))).then(([students, loaded]) => {
+  interests = loaded.interests;
+  applyData(students);
+}).catch(() => {
+  document.querySelector('main').textContent = 'Could not load the student list. Is the app still running?';
+});
+</script>
+</body>
+</html>

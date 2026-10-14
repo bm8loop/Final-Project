@@ -1,0 +1,31 @@
+interest_id,name,category
+1,Soccer,Sports
+2,Basketball,Sports
+3,Football,Sports
+4,Volleyball,Sports
+5,Track & Field,Sports
+6,Swimming,Sports
+7,Skiing & Snowboarding,Sports
+8,Guitar,Music
+9,Piano,Music
+10,Singing,Music
+11,Drums,Music
+12,Band,Music
+13,Orchestra,Music
+14,Music Production,Music
+15,Drawing,Arts
+16,Painting,Arts
+17,Photography,Arts
+18,Theater,Arts
+19,Dance,Arts
+20,Creative Writing,Arts
+21,Digital Art,Arts
+22,Coding,STEM
+23,Robotics,STEM
+24,Engineering,STEM
+25,Video Game Design,STEM
+26,Math Competitions,STEM
+27,Astronomy,STEM
+28,Biology,STEM
+29,Tennis,Sports
+30,Cycling,Sports
