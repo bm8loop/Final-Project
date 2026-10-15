@@ -21,12 +21,14 @@ STUDENTS_FILE = os.path.join(BASE_DIR, 'students.csv')
 INTERESTS_FILE = os.path.join(BASE_DIR, 'interests.csv')
 STUDENT_INTERESTS_FILE = os.path.join(BASE_DIR, 'student_interests.csv')
 PAGE_FILE = os.path.join(BASE_DIR, 'app.html')
+# Other files the page loads, by URL path: (file name, content type).
+STATIC_FILES = {'/rmh_school_logo.svg': ('rmh_school_logo.svg', 'image/svg+xml')}
 
 FIELDS = ['student_id', 'first_name', 'last_name', 'gender', 'grade', 'address',
           'distance_from_school_miles', 'latitude', 'longitude', 'email']
 INTEREST_FIELDS = ['interest_id', 'name', 'category']
 STUDENT_INTEREST_FIELDS = ['student_id', 'interest_id']
-GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say']
+GENDERS = ['Female', 'Male', 'Prefer not to say']
 GRADES = [9, 10, 11, 12]
 
 # Rocky Mountain High School, 1300 W Swallow Rd, Fort Collins, CO 80526
@@ -81,6 +83,13 @@ def read_students():
         if row['student_id'] is None:
             row['student_id'] = next_student_id(rows)
     return rows
+
+
+def email_owner(rows, email, except_id=None):
+    """Return the student (other than except_id) who already has this email, ignoring case, or None."""
+    email = email.strip().lower()
+    return next((r for r in rows if r['student_id'] != except_id
+                 and (r.get('email') or '').strip().lower() == email), None)
 
 
 def next_student_id(rows):
@@ -256,6 +265,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/':
             with open(PAGE_FILE, 'rb') as f:
                 self._send(200, f.read(), 'text/html; charset=utf-8')
+        elif path in STATIC_FILES:
+            name, content_type = STATIC_FILES[path]
+            with open(os.path.join(BASE_DIR, name), 'rb') as f:
+                self._send(200, f.read(), content_type)
         elif path == '/api/students':
             self._send_students()
         elif path == '/api/interests':
@@ -298,6 +311,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         with _lock:
             rows = read_students()
+            owner = email_owner(rows, row['email'], except_id=student_id)
+            if owner is not None:
+                self._send(400, {'error': f'{row["email"]} is already used by #{owner["student_id"]} '
+                                          f'{owner["first_name"]} {owner["last_name"]}.'})
+                return
             if student_id is None:
                 row['student_id'] = next_student_id(rows)
                 rows.append(row)

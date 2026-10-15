@@ -4,5 +4,5 @@ student_id,first_name,last_name,gender,grade,address,distance_from_school_miles,
 3,Mateo,Gutierrez,Male,11,"3618 S Lemay Ave, Fort Collins, CO 80525",2.6,40.534636,-105.053448,10003@psdschools.org
 4,Priya,Natarajan,Female,10,"812 Remington St, Fort Collins, CO 80524",2.4,40.576216,-105.075511,10003@psdschools.org
 5,Jordan,Whitaker,Non-binary,12,"2905 W Drake Rd, Fort Collins, CO 80526",1.7,40.552495,-105.131802,10004@psdschools.org
-6,Caleb,Okafor,Male,9,"5231 Ziegler Rd, Fort Collins, CO 80528",4.7,40.513811,-105.020066,10005@psdschools.org
+6,Celine,Okafor,Female,9,"5231 Ziegler Rd, Fort Collins, CO 80528",4.7,40.513811,-105.020066,10005@psdschools.org
 7,Jackson,Long,Male,10,"1508 Purple Sage Ct., Fort Collins, CO 80526",0.8,40.534846,-105.103567,10006@psdschools.org

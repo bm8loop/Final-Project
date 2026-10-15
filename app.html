@@ -10,19 +10,48 @@
   :root {
     --navy: #1c2a4a; --accent: #c8102e; --ink: #1f2430; --muted: #6b7280;
     --line: #e3e6ec; --bg: #f5f6f9; --card: #ffffff; --good: #1f8a4c;
+    /* Rocky Mountain High School colours, from the Lobos logo */
+    --rm-red: #a32035; --rm-red-dark: #6e1d29; --rm-gold: #eba900;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body { display: flex; flex-direction: column; background: var(--bg); color: var(--ink);
          font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-  header { background: var(--navy); color: #fff; display: flex; align-items: center; gap: 28px; padding: 0 20px; }
-  header h1 { font-size: 17px; margin: 0; padding: 14px 0; font-weight: 600; white-space: nowrap; }
+  header { background: linear-gradient(180deg, var(--rm-red-dark), var(--rm-red)); color: #fff;
+           border-bottom: 3px solid var(--rm-gold);
+           display: flex; align-items: center; gap: 28px; padding: 0 20px; }
+  header h1 { font-size: 17px; margin: 0; padding: 10px 0; font-weight: 600; white-space: nowrap;
+              display: flex; align-items: center; gap: 10px; }
+  header h1 img { width: 36px; height: 36px; }
+  header h1 a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  header h1 a:hover { color: var(--rm-gold); }
+
+  .hero { display: flex; align-items: center; gap: 24px; margin: 8px 0 24px; }
+  .hero img { width: 110px; height: 110px; flex: none; }
+  .hero h2 { font-size: 26px; line-height: 1.2; margin: 0 0 8px; }
+  .hero p { margin: 0; font-size: 16px; color: #3d4352; max-width: 640px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stats div { padding: 14px 18px; }
+  .stats b { display: block; font-size: 28px; line-height: 1.1; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .stats small { color: var(--muted); font-size: 13px; }
+  .sections { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 28px; }
+  .sections a { display: block; padding: 18px 20px; color: inherit; text-decoration: none;
+                border-left: 4px solid var(--navy); transition: box-shadow .15s, border-color .15s; }
+  .sections a:hover { border-left-color: var(--accent); box-shadow: 0 3px 12px rgba(0,0,0,.08); }
+  .sections h3 { margin: 0 0 6px; font-size: 17px; }
+  .sections h3::after { content: " →"; color: var(--muted); }
+  .sections p { margin: 0; color: #4a5060; font-size: 14px; }
+  .how { padding: 18px 20px; }
+  .how h3 { font-size: 15px; margin: 0 0 10px; }
+  .how ul { margin: 0; padding-left: 20px; color: #3d4352; font-size: 14px; }
+  .how li + li { margin-top: 6px; }
+  .how code { font-size: 13px; background: #eef1f6; padding: 1px 5px; border-radius: 4px; }
   nav { display: flex; gap: 4px; align-self: stretch; }
-  nav a { color: #c9d1e3; text-decoration: none; padding: 0 14px; display: flex; align-items: center;
+  nav a { color: #f2d7da; text-decoration: none; padding: 0 14px; display: flex; align-items: center;
           border-bottom: 3px solid transparent; }
   nav a:hover { color: #fff; }
-  nav a.active { color: #fff; border-bottom-color: var(--accent); }
+  nav a.active { color: var(--rm-gold); border-bottom-color: var(--rm-gold); }
 
   main { flex: 1; min-height: 0; overflow: auto; }
   .page { display: none; padding: 20px; max-width: 980px; margin: 0 auto; }
@@ -65,6 +94,8 @@
   #detail-summary { margin: 2px 0 0; }
   .empty { padding: 40px 20px; text-align: center; }
   .saved { color: var(--good); }
+  .coords { grid-column: 1 / -1; margin: -8px 0 0; font-size: 13px; color: var(--muted);
+            font-variant-numeric: tabular-nums; }
   .interests-box { grid-column: 1 / -1; margin: 0; padding: 12px 14px 14px; border: 1px solid var(--line);
                    border-radius: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                    gap: 12px 16px; }
@@ -147,7 +178,7 @@
 </head>
 <body>
 <header>
-  <h1>🏫 Rocky Mountain High School</h1>
+  <h1><a href="#home" title="Home"><img src="rmh_school_logo.svg" alt="">Rocky Mountain High School</a></h1>
   <nav>
     <a href="#students" data-page="students">Students</a>
     <a href="#map" data-page="map">Map</a>
@@ -157,6 +188,49 @@
 </header>
 
 <main>
+  <section class="page" id="page-home">
+    <div class="hero">
+      <img src="rmh_school_logo.svg" alt="Rocky Mountain High School Lobos logo">
+      <div>
+        <h2>Getting to know our students</h2>
+        <p>This app keeps a small directory of Rocky Mountain High School students and shows how they are
+           connected: where they live compared with school, what they are interested in, and who might get along.</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="card"><b id="stat-students"></b><small>students</small></div>
+      <div class="card"><b id="stat-interests"></b><small>interests to choose from</small></div>
+      <div class="card"><b id="stat-distance"></b><small>average miles from school</small></div>
+    </div>
+
+    <div class="sections">
+      <a class="card" href="#students"><h3>Students</h3>
+        <p>Look up, add and edit student records: email, grade, gender, home address and interests.</p></a>
+      <a class="card" href="#map"><h3>Map</h3>
+        <p>See where students live across Fort Collins and how far each one is from school.</p></a>
+      <a class="card" href="#friends"><h3>Friends</h3>
+        <p>Pick two students to estimate how likely they are to be friends, from shared interests, grade,
+           how close they live and gender.</p></a>
+      <a class="card" href="#interests"><h3>Interests</h3>
+        <p>Manage the hobbies and activities students can choose from, grouped into categories.</p></a>
+    </div>
+
+    <div class="card how">
+      <h3>How it works</h3>
+      <ul>
+        <li>Everything is saved in three CSV files: <code>students.csv</code> for student records,
+            <code>interests.csv</code> for the list of interests, and <code>student_interests.csv</code>
+            for which student chose which interest.</li>
+        <li>When an address is saved, the free U.S. Census Bureau address lookup turns it into latitude and
+            longitude. The distance from school (1300 W Swallow Rd) is the straight-line distance in miles,
+            not the driving distance.</li>
+        <li>The friendship score is a simple formula for exploring the data, not a real prediction.
+            The Friends page shows exactly how each part of the score is worked out.</li>
+      </ul>
+    </div>
+  </section>
+
   <section class="page" id="page-students">
     <div class="card side-list" id="student-list">
       <div class="bar">
@@ -185,6 +259,7 @@
         <label class="wide">Full address
           <input name="address" required placeholder="1300 W Swallow Rd, Fort Collins, CO 80526">
         </label>
+        <p class="coords" id="detail-coords"></p>
         <fieldset class="interests-box" id="interest-boxes">
           <legend>Interests</legend>
         </fieldset>
@@ -266,13 +341,14 @@ let savedNotice = '';  // shown once on the next render of the student form
 let interests = [];
 let editingInterestId = null;
 
-// ---------- routing: #students, #students/2, #students/new, #map/3, #friends/1/4, #interests/Music ----------
+// ---------- routing: #home, #students, #students/2, #students/new, #map/3, #friends/1/4, #interests/Music ----------
 
 function route() {
-  const [page = 'students', ...args] = location.hash.replace('#', '').split('/');
-  const name = ['students', 'map', 'friends', 'interests'].includes(page) ? page : 'students';
+  const [page, ...args] = location.hash.replace('#', '').split('/');
+  const name = ['home', 'students', 'map', 'friends', 'interests'].includes(page) ? page : 'home';
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.page === name));
+  if (name === 'home') showHome();
   if (name === 'students') showStudents(args[0]);
   savedNotice = '';
   if (name === 'map') showMap(args[0]);
@@ -283,6 +359,15 @@ function route() {
 function applyData(fresh) {
   data = fresh;
   route();
+}
+
+// ---------- Home ----------
+
+function showHome() {
+  $('stat-students').textContent = data.students.length;
+  $('stat-interests').textContent = interests.length;
+  const miles = data.students.map(s => parseFloat(s.distance_from_school_miles)).filter(m => !Number.isNaN(m));
+  $('stat-distance').textContent = miles.length ? (miles.reduce((a, b) => a + b, 0) / miles.length).toFixed(1) : '–';
 }
 
 // ---------- Students ----------
@@ -330,6 +415,10 @@ function showStudents(arg) {
   for (const field of ['first_name', 'last_name', 'email', 'gender', 'grade', 'address']) {
     form[field].value = student ? student[field] : '';
   }
+  $('detail-coords').hidden = !student;
+  $('detail-coords').textContent = !student ? ''
+    : student.lat === null ? 'Latitude and longitude not saved yet. They are looked up when you save.'
+    : `Latitude ${student.lat.toFixed(6)}  ·  Longitude ${student.lon.toFixed(6)}`;
   renderInterestBoxes(student ? student.interest_ids : []);
   if (!savedMessage) form.first_name.focus();
 }
